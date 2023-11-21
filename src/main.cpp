@@ -1,7 +1,6 @@
 #include <raylib.h>
 #include <string>
 #include <cmath>
-#include <iostream>
 
 struct Entity {
     Vector2 pos;

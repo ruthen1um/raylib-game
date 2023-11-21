@@ -13,11 +13,6 @@ CXX := g++
 
 all: clean options $(PROG)
 
-windows: CXX := x86_64-w64-mingw32-g++
-windows: CXXFLAGS += -I/usr/local/include
-windows: LDFLAGS += -L/home/ruthen1um/repo/raylib-windows/src -static
-windows: all
-
 options:
 	@echo "build options:"
 	@echo "CXXFLAGS = ${CXXFLAGS}"
@@ -37,4 +32,4 @@ $(OBJ_DIR) $(BIN_DIR):
 clean:
 	@rm -rf $(BUILD_DIR)
 
-.PHONY: clean options windows all
+.PHONY: clean options all
