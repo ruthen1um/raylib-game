@@ -1,13 +1,12 @@
 #include <raylib.h>
-#include <vector>
 #include <string>
-#include <cmath>
 
 struct Entity {
     Vector2 pos;
     Vector2 size;
     Vector2 speed;
-    Vector4 movement_box;
+    Vector2 limits;
+    Vector2 offset;
     Color color = BLACK;
     void display() {
         DrawRectangleV(pos, size, color);
@@ -15,37 +14,45 @@ struct Entity {
 };
 
 struct PlayerControls {
-    int up = KEY_UP;
-    int down = KEY_DOWN;
-    int left = KEY_LEFT;
-    int right = KEY_RIGHT;
+    int up;
+    int down;
+    int left;
+    int right;
 };
 
 struct Player : Entity {
     PlayerControls controls;
     void handle_input() {
         if (IsKeyDown(controls.up)) {
-            this->pos.y = this->movement_box.y + fmodf(
-                (this->movement_box.w - this->movement_box.y) + this->pos.y - this->speed.y,
-                this->movement_box.w - this->movement_box.y);
+            if (this->pos.y - this->speed.y < this->offset.y) {
+                this->pos.y = this->offset.y + this->limits.y - this->speed.y;
+            } else {
+                this->pos.y = this->pos.y - this->speed.y;
+            }
         }
 
         if (IsKeyDown(controls.down)) {
-            this->pos.y = this->movement_box.y + fmodf(
-                (this->movement_box.w - this->movement_box.y) + this->pos.y + this->speed.y,
-                this->movement_box.w - this->movement_box.y);
+            if (this->pos.y + this->speed.y > this->offset.y + this->limits.y) {
+                this->pos.y = this->offset.y + this->speed.y;
+            } else {
+                this->pos.y = this->pos.y + this->speed.y;
+            }
         }
 
         if (IsKeyDown(controls.left)) {
-            this->pos.x = this->movement_box.x + fmodf(
-                (this->movement_box.z - this->movement_box.x) + this->pos.x - this->speed.x,
-                this->movement_box.z - this->movement_box.x);
+            if (this->pos.x - this->speed.x < this->offset.x) {
+                this->pos.x = this->offset.x + this->limits.x - this->speed.x;
+            } else {
+                this->pos.x = this->pos.x - this->speed.x;
+            }
         }
 
         if (IsKeyDown(controls.right)) {
-            this->pos.x = this->movement_box.x + fmodf(
-                (this->movement_box.z - this->movement_box.x) + this->pos.x + this->speed.x,
-                this->movement_box.z - this->movement_box.x);
+            if (this->pos.x + this->speed.x > this->offset.x + this->limits.x) {
+                this->pos.x = this->offset.x + this->speed.x;
+            } else {
+                this->pos.x = this->pos.x + this->speed.x;
+            }
         }
     }
 };
@@ -67,60 +74,56 @@ main()
     const int height = 720;
     const std::string title = "my game";
 
-    std::vector<Player *> players;
+    const int player_count = 2;
 
-    auto player1 = new Player;
-    auto player2 = new Player;
+    Player * players[player_count];
+    PlayerControls players_controls[player_count];
+    Color players_colors[player_count];
 
-    players.push_back(player1);
-    players.push_back(player2);
-
-    player1->size = default_player_size;
-    player1->speed = default_player_speed;
-    player1->color = RED;
-
-    player1->movement_box = {
-        .x = 0,
-        .y = 0,
-        .z = width / 2.0f,
-        .w = height
-    };
-
-    player1->pos = {
-        .x = fabsf(player1->movement_box.x - player1->movement_box.z) / 2.0f + player1->movement_box.x,
-        .y = fabsf(player1->movement_box.y - player1->movement_box.w) / 2.0f + player1->movement_box.y
-    };
-
-    player1->controls = {
+    players_controls[0] = {
         .up = KEY_W,
         .down = KEY_S,
         .left = KEY_A,
         .right = KEY_D
     };
 
+    players_colors[0] = RED;
 
-    player2->size = default_player_size;
-    player2->speed = default_player_speed;
-    player2->color = GREEN;
-
-    player2->movement_box = {
-        .x = width / 2.0f,
-        .y = 0,
-        .z = width,
-        .w = height
-    };
-
-    player2->pos = {
-        .x = fabsf(player2->movement_box.x - player2->movement_box.z) / 2.0f + player2->movement_box.x,
-        .y = fabsf(player2->movement_box.y - player2->movement_box.w) / 2.0f + player2->movement_box.y
-    };
-
-    player2->controls = {
+    players_controls[1] = {
         .up = KEY_UP,
         .down = KEY_DOWN,
         .left = KEY_LEFT,
         .right = KEY_RIGHT
     };
+
+    players_colors[1] = BLUE;
+
+    for (int i = 0; i < player_count; i++) {
+        auto player = new Player;
+
+        players[i] = player;
+
+        player->size = default_player_size;
+        player->speed = default_player_speed;
+
+        player->limits = {
+            .x = width / static_cast<float>(player_count),
+            .y = height
+        };
+
+        player->offset = {
+            .x = width / static_cast<float>(player_count) * i,
+            .y = 0
+        };
+
+        player->pos = {
+            .x = player->offset.x + (player->limits.x / 2.0f),
+            .y = player->offset.y + (player->limits.y / 2.0f)
+        };
+
+        player->color = players_colors[i];
+        player->controls = players_controls[i];
+    }
 
     Color bg_color = WHITE;
 
