@@ -3,88 +3,77 @@
 
 typedef struct Button {
     Rectangle rectangle;
-    Color color;
-//    Rectangle shadowFirstLevel;
-    Rectangle shadowOutline;
     Rectangle outline;
+    Rectangle shadowOutline;
     Rectangle shadowSecondLevel;
-    Rectangle gradientFirstLevel;
-    Rectangle gradientSecondLevel;
-    Color colorShadowFirstLevel;
+    Color color;
     Color colorOutline;
     Color colorShadowOutline;
     Color colorShadowSecondLevel;
-    Color colorGradientFirstLevel;
-    Color colorGradientSecondLevel;
-} Button;
+    Color colorShadowThirdLevel;
+    bool clicked = false;
 
-Button button0 = {0};
-bool button0Clicked = false;
+    bool IsMouseOverButton() {
+        return CheckCollisionPointRec(GetMousePosition(), this->rectangle);
+    }
+
+    Color ColorLight(float multiplier, Color newColor) {
+        return (Color) {
+                newColor.r = this->color.r + (255.f - this->color.r) * multiplier,
+                newColor.g = this->color.g + (255.f - this->color.g) * multiplier,
+                newColor.b = this->color.b + (255.f - this->color.b) * multiplier,
+                newColor.a = this->color.a
+        };
+    }
+    Color ColorFade(float multiplier, Color newColor) {
+        return (Color) {
+                newColor.r = this->color.r * multiplier,
+                newColor.g = this->color.g * multiplier,
+                newColor.b = this->color.b * multiplier,
+                newColor.a = this->color.a
+        };
+    }
+    Rectangle MakeDeep(float multiplier, Rectangle dependentRectangle) {
+        return (Rectangle) {
+                dependentRectangle.x - std::min(dependentRectangle.width, dependentRectangle.height) / multiplier,
+                dependentRectangle.y - std::min(dependentRectangle.width, dependentRectangle.height) / multiplier,
+                dependentRectangle.width + 2 * std::min(this->rectangle.width, this->rectangle.height) / multiplier,
+                dependentRectangle.height + 2 * std::min(this->rectangle.width, this->rectangle.height) / multiplier
+        };
+    }
+    Button MakeThreeDimensional() {
+        this->outline = MakeDeep(15, this->rectangle);
+        this->shadowOutline = MakeDeep(15, this->outline);
+        this->shadowSecondLevel = MakeDeep(40, this->rectangle);
+
+        this->colorOutline = ColorLight(0.75, colorOutline);
+        this->colorShadowOutline = ColorFade(0.5, colorShadowOutline);
+        this->colorShadowSecondLevel = ColorFade(0.5, colorShadowSecondLevel);
+        this->colorShadowThirdLevel = ColorFade(0.7, colorShadowThirdLevel);
+    }
+} Button;
 
 void InitButton(Button *button, Rectangle rectangle, Color color) {
     button->rectangle = rectangle;
-    button->outline = (Rectangle) {
-        rectangle.x + rectangle.width / 15.f,
-        rectangle.y + rectangle.height / 15.f,
-        rectangle.width - 2 * rectangle.width / 15.f,
-        rectangle.height - 2 * rectangle.height / 15.f
-    };
-    button->shadowOutline = (Rectangle) {
-            button->outline.x - button->outline.width / 50.f,
-            button->outline.y - button->outline.height / 50.f,
-            button->outline.width + button->outline.width / 30.f,
-            button->outline.height + button->outline.height / 30.f
-    };
-//    button->shadowFirstLevel = (Rectangle) {
-//            rectangle.x - rectangle.width / 160.f,
-//            rectangle.y + rectangle.height / 6.f,
-//            rectangle.width - rectangle.width / 5.f,
-//            rectangle.height - rectangle.height / 5.f
-//    };
-    button->shadowSecondLevel = (Rectangle) {
-            button->outline.x + button->outline.width / 20.f,
-            button->outline.y + button->outline.height / 20.f,
-            button->outline.width - 2 * button->outline.width / 20.f,
-            button->outline.height - 2 * button->outline.height / 20.f
-    };
-    button->gradientFirstLevel = (Rectangle) {
-            button->shadowSecondLevel.x + button->shadowSecondLevel.width / 30.f,
-            button->shadowSecondLevel.y + button->shadowSecondLevel.height / 30.f,
-            button->shadowSecondLevel.width - 2 * button->shadowSecondLevel.width / 30.f,
-            button->shadowSecondLevel.height - 2 * button->shadowSecondLevel.height / 30.f
-    };
-    button->gradientSecondLevel = (Rectangle) {
-            button->rectangle.x + button->gradientFirstLevel.x,
-            button->gradientFirstLevel.y / 2.f,
-            button->gradientFirstLevel.width - 2 * abs(button->gradientFirstLevel.x - button->gradientSecondLevel.x),
-            button->gradientFirstLevel.height / 2 - 2 * abs(button->gradientFirstLevel.y - button->gradientSecondLevel.y)
-    };
     button->color = color;
-    button->colorShadowFirstLevel = {105, 105, 105, 255};
-    button->colorOutline = (Color) {
-        button->colorOutline.r = button->color.r + (255 - button->color.r) * 0.25,
-            button->colorOutline.g = button->color.g + (255 - button->color.g) * 0.25,
-            button->colorOutline.b = button->color.b + (255 - button->color.b) * 0.25,
-            button->colorOutline.a = button->color.a
-    };
-    button->colorShadowSecondLevel = (Color) {
-            button->colorOutline.r = button->color.r * 0.75,
-            button->colorOutline.g = button->color.g * 0.75,
-            button->colorOutline.b = button->color.b * 0.75,
-            button->colorOutline.a = button->color.a
-    };
-    button->colorGradientFirstLevel = button->color;
-    button->colorShadowOutline = button->colorShadowSecondLevel;
-    button->colorGradientSecondLevel = (Color) {
-            button->colorOutline.r = button->color.r + (255 - button->color.r) * 0.5,
-            button->colorOutline.g = button->color.g + (255 - button->color.g) * 0.5,
-            button->colorOutline.b = button->color.b + (255 - button->color.b) * 0.5,
-            button->colorOutline.a = button->color.a
-    };
+    button->MakeThreeDimensional();
 }
 
-bool IsMouseOverButton(Button button) {
-    return CheckCollisionPointRec(GetMousePosition(), button.rectangle);
+void DrawButton(Button button) {
+    DrawRectangleRec(button.shadowOutline, button.colorShadowOutline);
+    DrawRectangleGradientV(button.outline.x,
+                           button.outline.y,
+                           button.outline.width,
+                           button.outline.height,
+                           button.colorOutline,
+                           button.colorShadowThirdLevel);
+    DrawRectangleRec(button.shadowSecondLevel, button.colorShadowSecondLevel);
+    DrawRectangleGradientV(button.rectangle.x,
+                           button.rectangle.y,
+                           button.rectangle.width,
+                           button.rectangle.height,
+                           button.color,
+                           button.colorShadowThirdLevel);
 }
 
 int main() {
@@ -94,7 +83,18 @@ int main() {
     const std::string title = "menu";
 
     InitWindow(screenWidth, screenHeight, title.c_str());
-    InitButton(&button0, (Rectangle){20, 20, 200, 200}, BLACK);
+
+    const int buttonWidth = 700;
+    const int buttonHeight = 50;
+    const float buttonFirstPosition = screenWidth * 0.25;
+
+    Button button0 = {0};
+    Button button1 = {0};
+    Button button2 = {0};
+
+    InitButton(&button0, (Rectangle){(screenWidth - buttonWidth) / 2.f, buttonFirstPosition, buttonWidth, buttonHeight}, GREEN);
+    InitButton(&button1, (Rectangle){(screenWidth - buttonWidth) / 2.f, buttonFirstPosition + 2.f * buttonHeight, buttonWidth, buttonHeight}, YELLOW);
+    InitButton(&button2, (Rectangle){(screenWidth - buttonWidth) / 2.f, buttonFirstPosition + 4.f * buttonHeight, buttonWidth, buttonHeight}, BLUE);
 
     SetTargetFPS(60);
     SetExitKey(KEY_ESCAPE);
@@ -103,22 +103,23 @@ int main() {
     const int menuFontSpacing = 5;
     const float menuPositionX = screenWidth / 2.f - MeasureText(title.c_str(), menuFontSize) / 2;
     const int menuPositionY = screenHeight / 4 - menuFontSize / 2;
-    const Font menuFont = LoadFontEx("../resources/fonts/pixel-anchor-jack_0.ttf", menuFontSize, nullptr, 0);
+    const Font menuFont = LoadFontEx("../resources/fonts/Pixel_Anchor-Jack/pixel-anchor-jack_0.ttf", menuFontSize, nullptr, 0);
 
     while (!WindowShouldClose()) {
         if(!IsWindowState(FLAG_VSYNC_HINT))
             SetWindowState(FLAG_VSYNC_HINT);
         BeginDrawing();
         {
-            if(IsMouseOverButton(button0)) {
-                button0.color = RED;
-            } else {
-                button0.color = RED;
-            }
-
-            if(IsMouseOverButton(button0) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                button0Clicked = true;
-            }
+//            TODO ......ДОПИСАТЬ ЛОГИКУ КНОПКИ ДЛЯ ДВОЙНОГО НАЖАТИЯ И ПРОПИСАТЬ ФУНКЦИЮ......
+//            if(button0.IsMouseOverButton()) {
+//                button0.color = RED;
+//            } else {
+//                button0.color = GREEN;
+//            }
+//
+//            if(button0.IsMouseOverButton() && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+//                button0.clicked = true;
+//            }
 
             ClearBackground(RAYWHITE);
             DrawTextEx(
@@ -130,36 +131,18 @@ int main() {
                     BLACK
             );
 
-//            DrawRectangleRec(button0.shadowFirstLevel, button0.colorShadowFirstLevel);
-            DrawRectangleRec(button0.shadowOutline, button0.colorShadowOutline);
-            DrawRectangleGradientV(button0.outline.x,
-                                   button0.outline.y,
-                                   button0.outline.width,
-                                   button0.outline.height,
-                                   WHITE,
-                                   button0.colorOutline);
-            DrawRectangleRec(button0.shadowSecondLevel, button0.colorShadowSecondLevel);
-            DrawRectangleGradientV(button0.gradientFirstLevel.x,
-                                   button0.gradientFirstLevel.y,
-                                   button0.gradientFirstLevel.width,
-                                   button0.gradientFirstLevel.height,
-                                   button0.colorGradientSecondLevel,
-                                   button0.colorGradientFirstLevel);
-            DrawRectangleGradientV(button0.gradientSecondLevel.x,
-                                   button0.gradientSecondLevel.y,
-                                   button0.gradientSecondLevel.width,
-                                   button0.gradientSecondLevel.height,
-                                   WHITE,
-                                   button0.colorGradientSecondLevel);
-            DrawText(
-                    "Click me",
-                     button0.rectangle.x + button0.rectangle.width / 2 - MeasureText("Click me", 20) / 2,
-                     button0.rectangle.y + button0.rectangle.height / 2 - 10,
-                     20,
-                     GREEN);
+            DrawButton(button0);
+            DrawButton(button1);
+            DrawButton(button2);
 
-            if(button0Clicked) {
+            if(button0.clicked) {
                 ClearBackground(GREEN);
+            }
+            if(button1.clicked) {
+                ClearBackground(BLUE);
+            }
+            if(button2.clicked) {
+                ClearBackground(RED);
             }
         }
         EndDrawing();
